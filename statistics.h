@@ -31,7 +31,9 @@
  * \brief OpenSIPS statistics handling
  */
 
+#undef register_stat2
 #define register_stat2(_mod,_name,_desc,_pvar,_flags,_extra) 0
+#undef register_stat
 #define register_stat(_mod,_name,_desc,_pvar,_flags,_extra) 0
 
 #ifndef _STATISTICS_H_
