@@ -1,3 +1,4 @@
+
 /*
  * Copyright (C) 2006 Voice Sistem SRL
  *
@@ -30,6 +31,8 @@
  * \brief OpenSIPS statistics handling
  */
 
+#define register_stat2(_mod,_name,_desc,_pvar,_flags,_extra) 0
+#define register_stat(_mod,_name,_desc,_pvar,_flags,_extra) 0
 
 #ifndef _STATISTICS_H_
 #define _STATISTICS_H_
