@@ -258,7 +258,7 @@ void *shm_getmem(int fd, void *force_addr, unsigned long size)
 					 flags, fd, 0);
 #else /* USE_MMAP */
 /* TODO: handle persistent storage for SysV */
-	#warn "Cannot have persistent storage using SysV"
+	//#warn "Cannot have persistent storage using SysV"
 	if (force_addr || fd == -1)
 		return INVALID_MAP;
 
