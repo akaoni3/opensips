@@ -31,11 +31,6 @@
  * \brief OpenSIPS statistics handling
  */
 
-#undef register_stat2
-#define register_stat2(_mod,_name,_desc,_pvar,_flags,_extra) 0
-#undef register_stat
-#define register_stat(_mod,_name,_desc,_pvar,_flags,_extra) 0
-
 #ifndef _STATISTICS_H_
 #define _STATISTICS_H_
 
@@ -188,6 +183,7 @@ extern gen_lock_t *stat_lock;
 	#define register_module_stats(_mod,_stats) 0
 	#define __register_module_stats(_mod,_stats, unsafe) 0
 	#define register_stat( _mod, _name, _pvar, _flags) 0
+	#define register_stat2(_mod,_name,_desc,_pvar,_flags,_extra) 0
 	#define register_dynamic_stat( _name, _pvar) 0
 	#define __register_dynamic_stat( _group, _name, _pvar) 0
 	#define get_stat( _name )  0
