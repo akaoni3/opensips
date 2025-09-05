@@ -1,0 +1,44 @@
+diff --git a/modules/db_text/dbt_base.c b/modules/db_text/dbt_base.c
+index 1111111..2222222 100644
+--- a/modules/db_text/dbt_base.c
++++ b/modules/db_text/dbt_base.c
+@@
+ int dbt_table_check_row(dbt_table_p _dtp, dbt_row_p _drp)
+ {
+         int i;
+         if(!_dtp || _dtp->nrcols <= 0 || !_drp)
+                 return -1;
+
+         for(i=0; i<_dtp->nrcols; i++)
+         {
+                 if(!_drp->fields[i].nul
+                                 && db_is_neq_type(_dtp->colv[i]->type, _drp->fields[i].type))
+                 {
+                         LM_ERR("incompatible types - field %d [%d/%d]\n",i,
+                                         _dtp->colv[i]->type, _drp->fields[i].type);
+                         return -1;
+                 }
+                 if(_dtp->colv[i]->flag & DBT_FLAG_NULL)
+                         continue;
+
+                 if(!_drp->fields[i].nul)
+                         continue;
+
+                 if(_dtp->colv[i]->type==DB_INT
+                         && (_dtp->colv[i]->flag & DBT_FLAG_AUTO)
+                         && i==_dtp->auto_col)
+                 {
+                         _drp->fields[i].nul = 0;
+                         _drp->fields[i].val.int_val = ++_dtp->auto_val;
+                         continue;
+                 }
+
+-                LM_ERR("null value not allowed - field %d\n",i);
++                LM_ERR("null value not allowed - field %d (colname='%.*s', type=%d, table='%.*s')\n",
++                       i+1,
++                       _dtp->colv[i]->name.len, _dtp->colv[i]->name.s,
++                       _dtp->colv[i]->type,
++                       _dtp->name.len, _dtp->name.s);
++                /* 値の中身も型別に出力 */
++                if (_drp->fields[i].type == DB_STRING || _drp->fields[i].type == DB_STR) {
++                    LM_ERR("  value(type=string) = '%.*s'\?
