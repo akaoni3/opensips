@@ -495,7 +495,7 @@ int dbt_table_check_row(dbt_table_p _dtp, dbt_row_p _drp)
 				_drp->fields[i].val.double_val);
 		} else {
 			LM_ERR("  value(type=%d) = (not shown)\n", _drp->fields[i].type);
-
+		}
 		return -1;
 	}
 
