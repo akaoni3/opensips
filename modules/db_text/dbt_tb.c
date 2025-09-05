@@ -476,7 +476,26 @@ int dbt_table_check_row(dbt_table_p _dtp, dbt_row_p _drp)
 			continue;
 		}
 
-		LM_ERR("null value not allowed - field %d\n",i);
+		LM_ERR("null value not allowed - field %d (colname='%.*s', type=%d, table='%.*s')\n",
+			i+1,
+			_dtp->colv[i]->name.len, _dtp->colv[i]->name.s,
+			_dtp->colv[i]->type,
+			_dtp->name.len, _dtp->name.s);
+		/* 値の中身も型別に出力 */
+		if (_drp->fields[i].type == DB_STRING || _drp->fields[i].type == DB_STR) {
+			LM_ERR("  value(type=string) = '%.*s'\n",
+				_drp->fields[i].val.str_val.len,
+				_drp->fields[i].val.str_val.s ?
+				_drp->fields[i].val.str_val.s : "");
+		} else if (_drp->fields[i].type == DB_INT || _drp->fields[i].type == DB_BIGINT) {
+			LM_ERR("  value(type=int) = %lld\n",
+				(long long)_drp->fields[i].val.bigint_val);
+		} else if (_drp->fields[i].type == DB_DOUBLE) {
+			LM_ERR("  value(type=double) = %f\n",
+				_drp->fields[i].val.double_val);
+		} else {
+			LM_ERR("  value(type=%d) = (not shown)\n", _drp->fields[i].type);
+
 		return -1;
 	}
 
