@@ -96,8 +96,14 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 	dbt_table_p dtp = NULL;
 	dbt_column_p colp, colp0 = NULL;
 	dbt_row_p rowp, rowp0 = NULL;
+	static int debug_count = 0;
 
 	enum {DBT_FLINE_ST, DBT_NLINE_ST, DBT_DATA_ST} state;
+
+	LM_DBG("DEBUG: dbt_load_file() call #%d for table [%.*s] (db=[%.*s])\n",
+		++debug_count,
+		tbn ? tbn->len : 0, tbn ? tbn->s : "",
+		dbn ? dbn->len : 0, dbn ? dbn->s : "");
 
 	LM_DBG("request for table [%.*s]\n", tbn->len, tbn->s);
 
@@ -149,6 +155,13 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 	max_auto = 0;
 	while(c!=EOF)
 	{
+		/* state 遷移ログ */
+		LM_DBG("DEBUG: table [%.*s] loop: state=%d row=%d col=%d char=0x%02x('%c')\n",
+			tbn->len, tbn->s,
+			state, crow+1, ccol+1,
+			(unsigned char)c,
+			(c >= 32 && c <= 126) ? c : '.');
+
 		switch(state)
 		{
 			case DBT_FLINE_ST:
@@ -173,6 +186,19 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						colp0 = colp0->next;
 					}
 					state = DBT_NLINE_ST;
+
+					/* デバッグ: 読み込んだカラム定義を表示 */
+					LM_DBG("DEBUG: table '%.*s' column count = %d\n",
+						dtp->name.len, dtp->name.s, dtp->nrcols);
+					for (int dbg_i = 0; dbg_i < dtp->nrcols; dbg_i++) {
+						LM_DBG("DEBUG: col[%d] name='%.*s' type=%d flags=0x%x\n",
+						dbg_i+1,
+						dtp->colv[dbg_i]->name.len,
+						dtp->colv[dbg_i]->name.s,
+						dtp->colv[dbg_i]->type,
+						dtp->colv[dbg_i]->flag);
+					}
+
 					break;
 				}
 				while(c!=DBT_DELIM_C && c!='(' && c!=DBT_DELIM_R)
@@ -327,12 +353,28 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 			break;
 
 			case DBT_DATA_ST:
+				LM_DBG("DEBUG DATA_ST start: row=%d col=%d firstchar=0x%02x('%c')\n",
+					crow+1, ccol+1, (unsigned char)c,
+					(c >= 32 && c <= 126) ? c : '.');
 				//LM_DBG("state DATA!\n");
 				//while(c==DBT_DELIM)
 				//	c = fgetc(fin);
 				if(ccol == dtp->nrcols && (c==DBT_DELIM_R || c==EOF))
 				{
 					state = DBT_NLINE_ST;
+
+                                        /* デバッグ: 読み込んだカラム定義を表示 */
+                                        LM_DBG("DEBUG: table '%.*s' column count = %d\n",
+                                                dtp->name.len, dtp->name.s, dtp->nrcols);
+                                        for (int dbg_i = 0; dbg_i < dtp->nrcols; dbg_i++) {
+                                                LM_ERR("DEBUG: col[%d] name='%.*s' type=%d flags=0x%x\n",
+                                                dbg_i+1,
+                                                dtp->colv[dbg_i]->name.len,
+                                                dtp->colv[dbg_i]->name.s,
+                                                dtp->colv[dbg_i]->type,
+                                                dtp->colv[dbg_i]->flag);
+                                        }
+
 					break;
 				}
 				if(ccol>= dtp->nrcols)
@@ -371,7 +413,9 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 							//LM_DBG("data[%d,%d]=%d\n", crow,
 							//	ccol, dtval.val.bigint_val);
 						}
-						if(c!=DBT_DELIM && c!=DBT_DELIM_R && c!=EOF)
+						LM_DBG("DEBUG after int parse: c(dec)=%d c(hex)=0x%02x c(ascii)='%c'\n",
+							c, (unsigned char)c, (unsigned char)c);
+						if(c!=DBT_DELIM && c!=DBT_DELIM_C && c!=DBT_DELIM_R && c!=EOF)
 							goto clean;
 						if(dbt_row_set_val(rowp,&dtval,dtp->colv[ccol]->type,
 									ccol))
@@ -452,8 +496,12 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						else
 						{
 							dtval.nul = 0;
-							while(c!=DBT_DELIM && c!=DBT_DELIM_R && c!=EOF)
+							while(c!=DBT_DELIM && c!=DBT_DELIM_C && c!=DBT_DELIM_R && c!=EOF)
 							{
+								LM_DBG("DEBUG STR read loop: char=0x%02x('%c')\n",
+									(unsigned char)c,
+									(c >= 32 && c <= 126) ? c : '.');
+
 								if(c=='\\')
 								{
 									c = fgetc(fin);
@@ -495,7 +543,7 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 							//LM_DBG("data[%d,%d]=%.*s\n",
 							///	crow, ccol, bp, buf);
 						}
-						if(c!=DBT_DELIM && c!=DBT_DELIM_R && c!=EOF)
+						if(c!=DBT_DELIM && c!=DBT_DELIM_C && c!=DBT_DELIM_R && c!=EOF)
 							goto clean;
 						if(dbt_row_set_val(rowp,&dtval,dtp->colv[ccol]->type,
 									ccol))
@@ -509,9 +557,19 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 				if (c == EOF)
 					c = DBT_DELIM_R;
 
-				if(c==DBT_DELIM)
+				if (c == DBT_DELIM || c == DBT_DELIM_C) {
 					c = fgetc(fin);
-				ccol++;
+					while (c == DBT_DELIM_C) {
+						c = fgetc(fin);
+					}
+					ccol++;
+				} else if (c == DBT_DELIM_R) {
+					/* 行終端なので次の行へ */
+					state = DBT_NLINE_ST;
+				} else {
+					/* 想定外の文字はエラー */
+					goto clean;
+				}
 			break; // state DBT_DATA_ST
 		}
 	}
@@ -526,6 +584,12 @@ done:
 		pkg_free(buf);
 	return dtp;
 clean:
+	LM_ERR("DEBUG: goto clean for table [%.*s] at row=%d col=%d c=0x%02x('%c')\n",
+		tbn->len, tbn->s,
+		crow+1, ccol+1,
+		(unsigned char)c,
+		(c >= 32 && c <= 126) ? c : '.');
+
 	/// ????? FILL IT IN - incomplete row/column
 	// memory leak?!?! with last incomplete row
 	if(fin)
