@@ -496,7 +496,7 @@ dbt_table_p dbt_load_file(const str *tbn, const str *dbn)
 						else
 						{
 							dtval.nul = 0;
-							while(c!=DBT_DELIM && c!=DBT_DELIM_C && c!=DBT_DELIM_R && c!=EOF)
+							while(c!=DBT_DELIM_C && c!=DBT_DELIM_R && c!=EOF)
 							{
 								LM_DBG("DEBUG STR read loop: char=0x%02x('%c')\n",
 									(unsigned char)c,
